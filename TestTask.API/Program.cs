@@ -1,18 +1,31 @@
-using TestTask.Domain.Entity;
+using TestTask.Application.Services;
+using TestTask.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services
-    .AddSingleton<IEntityService, EntityService>();
+// Add services to the container.
 
-builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Services.AddAutoMapper(typeof(Program), typeof(TestTask.Application.IAssemblyMarker));
+
+builder.Services.AddSingleton<IEntityStorage, EntityStorage>();
+builder.Services.AddScoped<IEntityService, EntityService>();
 
 var app = builder.Build();
 
-app.UseRouting();
-app.UseSwagger();
-app.UseSwaggerUI();
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.UseAuthorization();
 
 app.MapControllers();
 

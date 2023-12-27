@@ -1,46 +1,51 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
-using TestTask.Domain.Entity;
+using TestTask.API.Models;
+using TestTask.Application.Services;
+using TestTask.Infrastructure.Dtos;
+using TestTask.Infrastructure.Services;
 
 namespace TestTask.API.Controllers;
 
 [ApiController]
-[Route("entity")]
 public class EntityController : ControllerBase
 {
+    private readonly IMapper _mapper;
     private readonly IEntityService _entityService;
 
-    public EntityController(IEntityService entityService)
+    public EntityController(IMapper mapper, IEntityService entityService)
     {
         _entityService = entityService;
+        _mapper = mapper;
     }
 
-    [HttpGet("get")]
-    [ProducesResponseType(typeof(int), 200)]
-    public async Task<IActionResult> GetById([FromHeader] Guid entityId)
-    {
-        var result = await _entityService.GetById(entityId);
-        
-        if (result is null) { return NotFound(); }
 
-        return Ok(result);
-    }
-
-    [HttpPost("post")]
-    [ProducesResponseType(204)]
-    public async Task<IActionResult> Create([FromBody] JsonElement body)
+    [HttpGet("[controller]")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> GetById(Guid id)
     {
-        var options = new JsonSerializerOptions
+        var dto = await _entityService.GetById(id);
+
+        if (dto == null)
         {
-            PropertyNameCaseInsensitive = true,
-        };
+            return NotFound();
+        }
 
-        var model = JsonSerializer.Deserialize<Entity>(body, options);
+        return new JsonResult(_mapper.Map<EntityModel>(dto));
+    }
 
-        var result =  await _entityService.Create(model);
-        if (result) 
-            return StatusCode(204);
+    [HttpPost("[controller]/{entityJson}")]
+    [ProducesResponseType(200)]
+    public async Task<IActionResult> Create(string entityJson)
+    {
+        var model = JsonSerializer.Deserialize<EntityModel>(entityJson, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 
-        return BadRequest(result);
+        var dto = _mapper.Map<EntityDto>(model);
+
+        await _entityService.Create(dto);
+
+        return Ok();
     }
 }
