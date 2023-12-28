@@ -23,11 +23,6 @@ public class EntityStorage : IEntityStorage
 
     public void Add(Entity entity)
     {
-        if (_entityStorage.ContainsKey(entity.Id))
-        {
-            throw new InvalidOperationException("An entry with same key already exists.");
-        }
-
-        _entityStorage.TryAdd(entity.Id, entity);
+        _entityStorage.AddOrUpdate(entity.Id, entity, (key, oldvalue) => throw new InvalidOperationException("An entry with same key already exists."));
     }
 }
